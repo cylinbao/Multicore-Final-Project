@@ -1,0 +1,16 @@
+##To run this program:
+./bfstest <starting node> <data>
+
+##Data are piped into the running program with
+
+## Sample ##
+cat sample.txt  | ./bfstest 1
+
+## Test dataset 1 ##
+./TEST1 | ./bfstest 1
+
+## Test dataset 2 ##
+./TEST2 | ./bfstest 1
+
+## Test dataset 3 ##
+./TEST3 | ./bfstest 1
