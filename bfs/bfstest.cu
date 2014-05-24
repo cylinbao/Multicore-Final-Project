@@ -55,11 +55,9 @@ void sig_check(int *level, int nv) {
 
 
 /* Read input from stdio (for genx.pl files, no more than 40 seconds) */
-graph * read_edge_list (int **tailp, int **headp) {
+void read_edge_list (int **tailp, int **headp, graph *G) {
   int max_edges = 100000000;
   int nedges, nr, t, h, maxv;
-  graph *G;
-  G = (graph *) calloc(1, sizeof(graph));
   
 	maxv = 0;
   *tailp = (int *) calloc(max_edges, sizeof(int));
@@ -86,8 +84,6 @@ graph * read_edge_list (int **tailp, int **headp) {
   G->nv = maxv+1;
   G->nbr = (int *) calloc(G->ne, sizeof(int));
   G->firstnbr = (int *) calloc(G->nv+1, sizeof(int));
-
-  return G;
 }
 
 
@@ -112,13 +108,7 @@ void print_CSR_graph (graph *G) {
 /* Modify the next two functions */
 void graph_from_edge_list (int *tail, int* head, graph *G) {
   int i, e, v;
-	/*
-  // count vertices
-  for (e = 0; e < G->ne; e++) {
-    if (tail[e] > maxv) maxv = tail[e];
-    if (head[e] > maxv) maxv = head[e];
-  }
-	*/
+
   // count neighbors of vertex v in firstnbr[v+1],
   for (e = 0; e < G->ne; e++) G->firstnbr[tail[e]+1]++;
 
@@ -189,6 +179,7 @@ int main (int argc, char* argv[]) {
   int nlevels;
   int startvtx;
   int i, v, reached;
+  G = (graph *) calloc(1, sizeof(graph));
 
   if (argc == 2) {
     startvtx = atoi (argv[1]);
@@ -198,7 +189,7 @@ int main (int argc, char* argv[]) {
     exit(1);
   }
   //nedges = read_edge_list (&tail, &head);
-  G = read_edge_list (&tail, &head);
+  read_edge_list (&tail, &head, G);
 
   clock_gettime(CLOCK_REALTIME, &start_time); //stdio scanf ended, timer starts  //Don't remove it
 
