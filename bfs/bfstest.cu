@@ -9,6 +9,8 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <cutil_inline.h>
+#include <sm_11_atomic_functions.h>
 
 
 typedef struct graphstruct { // A graph in compressed-adjacency-list (CSR) form
