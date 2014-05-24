@@ -55,10 +55,13 @@ void sig_check(int *level, int nv) {
 
 
 /* Read input from stdio (for genx.pl files, no more than 40 seconds) */
-int read_edge_list (int **tailp, int **headp) {
+graph * read_edge_list (int **tailp, int **headp) {
   int max_edges = 100000000;
-  int nedges, nr, t, h;
+  int nedges, nr, t, h, maxv;
+  graph *G;
+  G = (graph *) calloc(1, sizeof(graph));
   
+	maxv = 0;
   *tailp = (int *) calloc(max_edges, sizeof(int));
   *headp = (int *) calloc(max_edges, sizeof(int));
   nedges = 0;
@@ -68,11 +71,23 @@ int read_edge_list (int **tailp, int **headp) {
       printf("Limit of %d edges exceeded.\n",max_edges);
       exit(1);
     }
+
+		if(t > maxv)
+			maxv = t;
+		if(h > maxv)
+			maxv = h;
+
     (*tailp)[nedges] = t;
     (*headp)[nedges++] = h;
     nr = scanf("%i %i",&t,&h);
   }
-  return nedges;
+
+  G->ne = nedges;
+  G->nv = maxv+1;
+  G->nbr = (int *) calloc(G->ne, sizeof(int));
+  G->firstnbr = (int *) calloc(G->nv+1, sizeof(int));
+
+  return G;
 }
 
 
@@ -95,22 +110,15 @@ void print_CSR_graph (graph *G) {
 
 
 /* Modify the next two functions */
-graph * graph_from_edge_list (int *tail, int* head, int nedges) {
-  graph *G;
-  int i, e, v, maxv;
-  G = (graph *) calloc(1, sizeof(graph));
-  G->ne = nedges;
-  maxv = 0;
-
+void graph_from_edge_list (int *tail, int* head, graph *G) {
+  int i, e, v;
+	/*
   // count vertices
   for (e = 0; e < G->ne; e++) {
     if (tail[e] > maxv) maxv = tail[e];
     if (head[e] > maxv) maxv = head[e];
   }
-  G->nv = maxv+1;
-  G->nbr = (int *) calloc(G->ne, sizeof(int));
-  G->firstnbr = (int *) calloc(G->nv+1, sizeof(int));
-
+	*/
   // count neighbors of vertex v in firstnbr[v+1],
   for (e = 0; e < G->ne; e++) G->firstnbr[tail[e]+1]++;
 
@@ -125,7 +133,6 @@ graph * graph_from_edge_list (int *tail, int* head, int nedges) {
   // the loop above shifted firstnbr[] left; shift it back right
   for (v = G->nv; v > 0; v--) G->firstnbr[v] = G->firstnbr[v-1];
   G->firstnbr[0] = 0;
-  return G;
 }
 
 
@@ -178,7 +185,7 @@ int main (int argc, char* argv[]) {
   graph *G;
   int *level, *levelsize, *parent;
   int *tail, *head;
-  int nedges;
+  //int nedges;
   int nlevels;
   int startvtx;
   int i, v, reached;
@@ -190,12 +197,14 @@ int main (int argc, char* argv[]) {
     printf("example: cat sample.txt | ./bfstest 1\n");
     exit(1);
   }
-  nedges = read_edge_list (&tail, &head);
+  //nedges = read_edge_list (&tail, &head);
+  G = read_edge_list (&tail, &head);
 
   clock_gettime(CLOCK_REALTIME, &start_time); //stdio scanf ended, timer starts  //Don't remove it
 
   /* You can modify the function below */
-  G = graph_from_edge_list (tail, head, nedges);
+  //G = graph_from_edge_list (tail, head, nedges);
+  graph_from_edge_list (tail, head, G);
   free(tail);
   free(head);
 
