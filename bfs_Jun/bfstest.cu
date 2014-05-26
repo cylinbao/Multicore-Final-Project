@@ -9,24 +9,24 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <vector>
+#include <queue>
+#include <fstream>
+#include <iostream>
+#include <cutil_inline.h>
+#include <sm_11_atomic_functions.h>
 #define VISITED 1
 #define UNVISITED 0
 #define VTXNUM 60000000
-#define EDGENUM 90000000
 
-int* push_back(int*, int*, int*, int*);
+
 
 /* global state */
 struct timespec  start_time;                                 
 struct timespec  end_time;  
 
-
-int VISITED_CHECK[VTXNUM+1];
-int* vtx[VTXNUM+1];
-int vector_pos[VTXNUM+1];
-int vector_size[VTXNUM+1];
+pair<int, vector<int> > vtx[VTXNUM+1];
 int level[VTXNUM+1];
-int q[EDGENUM+1];
 int nv, ne = 0;
 
 unsigned int seed = 0x12345678;
@@ -59,58 +59,53 @@ void sig_check(int nv) {
 
 void read_edge_list () {
 	int max_edges = 100000000;
-	int nedges, nr, t, h, max;
+	int nedges, nr, t, h;
+
 	nedges = 0;
 	nr = scanf("%i %i",&h,&t);
-	if(t > h)	nv = t;
-	else	nv = h;
+	nv = max(t, h);
 	while (nr == 2) {
 		if (nedges >= max_edges) {
 			printf("Limit of %d edges exceeded.\n",max_edges);
 			exit(1);
 		}
-		vtx[h] = push_back(vtx[h], &t, &vector_pos[h], &vector_size[h]);
-		VISITED_CHECK[h] = UNVISITED;
-		VISITED_CHECK[h] = UNVISITED;
+		vtx[h].first = UNVISITED;
+		vtx[t].first = UNVISITED;
 		level[h] = -1;
 		level[t] = -1;
+		vtx[h].second.push_back(t);
 		ne++;
-		if(t > h)	max = t;
-		else	max = h;
-		if(max > nv)	nv = max;
+		nv = max(nv, max(t, h));
 		nr = scanf("%i %i",&h,&t);
 	}
 }
 
 void bfs()
 {
-	int lvl;
+	queue<int> q;
+	int lvl = 1	;
 	int samelvl;
-	int tmp_samelvl;
-	int i, q_front, q_back;
+	int tmp_samelvl = 0;
+	int i;
 	level[0] = -1;
 	level[1] = 0;
-	lvl = 1;
-	tmp_samelvl = 0;
-	for(i = 1; i <= vector_pos[1]; i++){
-		q[i] = vtx[1][i];
-		VISITED_CHECK[vtx[1][i]] = VISITED;
-		level[vtx[1][i]] = lvl;
+	for(i = 0; i < vtx[1].second.size(); i++){
+		q.push(vtx[1].second[i]);
+		vtx[vtx[1].second[i]].first = VISITED;
+		level[vtx[1].second[i]] = lvl;
 	}
 	lvl++;
-	samelvl = vector_pos[1];
-	q_front = 1;
-	q_back = vector_pos[1];
-	while(q_front <= q_back){
-		for(i = 1; i <= vector_pos[q[q_front]]; i++){
-			if(VISITED_CHECK[vtx[q[q_front]][i]] == UNVISITED){
-				q[++q_back] = vtx[q[q_front]][i];
-				VISITED_CHECK[vtx[q[q_front]][i]] = VISITED;
-				level[vtx[q[q_front]][i]] = lvl;
+	samelvl = vtx[1].second.size();
+	while(q.size()!=0){
+		for(i = 0; i < vtx[q.front()].second.size(); i++){
+			if(vtx[vtx[q.front()].second[i]].first == UNVISITED){
+				q.push(vtx[q.front()].second[i]);
+				vtx[vtx[q.front()].second[i]].first = VISITED;
+				level[vtx[q.front()].second[i]] = lvl;
 				tmp_samelvl++;
 			}
 		}
-		q_front++;
+		q.pop();
 		samelvl--;
 		if(samelvl == 0){
 			samelvl = tmp_samelvl;
@@ -124,48 +119,30 @@ void bfs()
 
 int main (int argc, char* argv[]) {
 	int startvtx;
-	int i, j, v, reached;
-//	if (argc == 2) {
-//		startvtx = atoi (argv[1]);
-//	} else {
-//		printf("usage:   bfstest <startvtx> < <edgelistfile>\n");
-//		printf("example: cat sample.txt | ./bfstest 1\n");
-//		exit(1);
-//	}
-	startvtx = 1;
-	for(i = 0; i < VTXNUM + 1; i++){
-		vector_pos[i] = 0;
-		vector_size[i] = 0;
+	int i, v, reached;
+	//ofstream ofs;
+	//ofs.open("result");
+	if (argc == 2) {
+		startvtx = atoi (argv[1]);
+	} else {
+		printf("usage:   bfstest <startvtx> < <edgelistfile>\n");
+		printf("example: cat sample.txt | ./bfstest 1\n");
+		exit(1);
 	}
+
 	read_edge_list();
 	nv++;
 	printf("Num of Edges: %d\n", ne);
 	printf("Num of Vertex: %d\n", nv);
 
-
-	//Print the Info of eacg vertex//
-	/*for(i = 0; i < nv; i++){
-		printf("Vertex[%d]: ", i);
-		j = 1;
-		while(j<=vector_pos[i]){
-			printf("%d ", vtx[i][j]);
-			j++;
-		}
-		printf("\nNum of link: %d\n", vector_pos[i]);
-	}*/
-
-
-
 	clock_gettime(CLOCK_REALTIME, &start_time); //stdio scanf ended, timer starts  //Don't remove it
 
 	bfs();
 
-		//Print the level of each vertex//
-//	for(i = 0; i <= 100; i++)
-//		printf("The level of Vertex[%d]: %d\n", i, level[i]);
-
-
 	clock_gettime(CLOCK_REALTIME, &end_time);  //graph construction and bfs completed timer ends  //Don't remove it
+
+	//for(int i = 0; i <= 100; i++)
+		//ofs<<"Level of vertex["<<i<<"]: "<<level[i]<<endl;
 
 
 	printf("Starting vertex for BFS is %d.\n\n",startvtx);
@@ -188,26 +165,4 @@ int main (int argc, char* argv[]) {
 	sig_check(nv);
 
 	return 0;
-}
-
-
-int* push_back(int *array, int* data, int* pos, int* size)
-{
-	if((*size) == 0){
-		array = (int*)malloc(2*sizeof(int));
-		array[1] = (*data);
-		(*pos) = 1;
-		(*size) = 2;
-	}
-	else if((*pos)+1 <= (*size)){
-		array[(*pos)+1] = (*data);
-		(*pos)++;
-	}
-	else if((*pos)+1 > (*size)){
-		array = (int*)realloc(array, 2*(*size)*sizeof(int));
-		array[(*pos)+1] = (*data);
-		(*size) = (*size)*2;
-		(*pos)++;
-	}
-	return array;
 }

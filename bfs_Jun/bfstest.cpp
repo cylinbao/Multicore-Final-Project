@@ -11,9 +11,14 @@
 #include <time.h>
 #include <vector>
 #include <queue>
+#include <pthread.h>
+#include <fstream>
+#include <iostream>
+
 #define VISITED 1
 #define UNVISITED 0
 #define VTXNUM 60000000
+#define THREADNUM 8
 
 using namespace std;
 
@@ -22,9 +27,20 @@ using namespace std;
 struct timespec  start_time;                                 
 struct timespec  end_time;  
 
+struct pthArg_t{
+	int threadID, vtxIdx;
+};
+
 pair<int, vector<int> > vtx[VTXNUM+1];
+queue<int> q;
+
+pthread_mutex_t q_lock;
+
 int level[VTXNUM+1];
 int nv, ne = 0;
+
+int lvl = 1, qTopIndex;
+int tmp_samelvl = 0;
 
 unsigned int seed = 0x12345678;
 unsigned int myrand(unsigned int *seed, unsigned int input) {  
@@ -77,13 +93,45 @@ void read_edge_list () {
 	}
 }
 
+void* discover(void* arg)
+{
+	int id = (int) arg;
+	int vtxAdjNum = vtx[qTopIndex].second.size();
+	int i, range, begin, end, nowVtxIdx;
+
+	range = vtxAdjNum / THREADNUM;
+
+	begin =	id * range; 
+	if(id == THREADNUM - 1)
+		end = vtxAdjNum;
+	else
+		end = ((id+1) * range);
+	
+	for(i=begin; i<end; i++){
+		nowVtxIdx = vtx[qTopIndex].second[i];
+		if(vtx[nowVtxIdx].first == UNVISITED){
+			vtx[nowVtxIdx].first = VISITED;
+			level[nowVtxIdx] = lvl;
+
+			pthread_mutex_lock(&q_lock);
+
+			q.push(nowVtxIdx);
+			tmp_samelvl++;
+
+			pthread_mutex_unlock(&q_lock);
+		}
+	}
+}
+
 void bfs()
 {
-	queue<int> q;
-	int lvl = 1	;
 	int samelvl;
-	int tmp_samelvl = 0;
 	int i;
+	pthread_t *threads;
+
+	threads = (pthread_t *) malloc (THREADNUM * sizeof(pthread_t));
+	pthread_mutex_init(&q_lock, NULL);
+
 	level[0] = -1;
 	level[1] = 0;
 	for(i = 0; i < vtx[1].second.size(); i++){
@@ -94,14 +142,15 @@ void bfs()
 	lvl++;
 	samelvl = vtx[1].second.size();
 	while(q.size()!=0){
-		for(i = 0; i < vtx[q.front()].second.size(); i++){
-			if(vtx[vtx[q.front()].second[i]].first == UNVISITED){
-				q.push(vtx[q.front()].second[i]);
-				vtx[vtx[q.front()].second[i]].first = VISITED;
-				level[vtx[q.front()].second[i]] = lvl;
-				tmp_samelvl++;
-			}
+		qTopIndex = q.front();
+		for(i=0; i < THREADNUM; i++){
+			pthread_create(&threads[i], NULL, discover, (void*) i);
 		}
+
+		for(i=0; i < THREADNUM; i++){
+			pthread_join(threads[i], NULL);
+		}
+
 		q.pop();
 		samelvl--;
 		if(samelvl == 0){
