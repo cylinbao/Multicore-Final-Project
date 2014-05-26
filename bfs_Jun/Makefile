@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -O3
+CFLAGS = -g -O2
 LIBS = -fopenmp -lrt -lm -lpthread
 SRCS = bfstest.cpp
 TARGET = bfstest
