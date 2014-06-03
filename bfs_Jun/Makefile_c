@@ -1,9 +1,9 @@
-CC = g++
-CFLAGS = -g -O2
+CC = gcc
+CFLAGS = -g3 -O2
 LIBS = -fopenmp -lrt -lm -lpthread
-SRCS = bfstest.cpp
+SRCS = bfstest.c
 TARGET = bfstest
 all:
-	g++ ${CFLAGS}  ${LIBS}  ${SRCS} -o ${TARGET} -lrt
+	gcc ${CFLAGS}  ${LIBS}  ${SRCS} -o ${TARGET} -lrt
 clean:
 	rm -rf ${TARGET}.out ${TARGET} 

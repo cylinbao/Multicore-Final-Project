@@ -17,7 +17,8 @@
 #include <sm_11_atomic_functions.h>
 #define VISITED 1
 #define UNVISITED 0
-#define VTXNUM 60000000
+#define VTXNUM 10
+#define EDGENUM 17
 
 
 

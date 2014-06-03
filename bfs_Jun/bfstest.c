@@ -21,12 +21,12 @@ struct timespec  start_time;
 struct timespec  end_time;  
 
 
-int VISITED_CHECK[VTXNUM+1];
+int VISIT_CHECK[VTXNUM+1];
 int* vtx[VTXNUM+1];
 int vector_pos[VTXNUM+1];
 int vector_size[VTXNUM+1];
 int level[VTXNUM+1];
-int q[EDGENUM+1];
+int queue[EDGENUM+1];
 int nv, ne = 0;
 
 unsigned int seed = 0x12345678;
@@ -70,8 +70,6 @@ void read_edge_list () {
 			exit(1);
 		}
 		vtx[h] = push_back(vtx[h], &t, &vector_pos[h], &vector_size[h]);
-		VISITED_CHECK[h] = UNVISITED;
-		VISITED_CHECK[h] = UNVISITED;
 		level[h] = -1;
 		level[t] = -1;
 		ne++;
@@ -84,47 +82,13 @@ void read_edge_list () {
 
 void bfs()
 {
-	int lvl;
-	int samelvl;
-	int tmp_samelvl;
-	int i, q_front, q_back;
-	level[0] = -1;
-	level[1] = 0;
-	lvl = 1;
-	tmp_samelvl = 0;
-	for(i = 1; i <= vector_pos[1]; i++){
-		q[i] = vtx[1][i];
-		VISITED_CHECK[vtx[1][i]] = VISITED;
-		level[vtx[1][i]] = lvl;
-	}
-	lvl++;
-	samelvl = vector_pos[1];
-	q_front = 1;
-	q_back = vector_pos[1];
-	while(q_front <= q_back){
-		for(i = 1; i <= vector_pos[q[q_front]]; i++){
-			if(VISITED_CHECK[vtx[q[q_front]][i]] == UNVISITED){
-				q[++q_back] = vtx[q[q_front]][i];
-				VISITED_CHECK[vtx[q[q_front]][i]] = VISITED;
-				level[vtx[q[q_front]][i]] = lvl;
-				tmp_samelvl++;
-			}
-		}
-		q_front++;
-		samelvl--;
-		if(samelvl == 0){
-			samelvl = tmp_samelvl;
-			tmp_samelvl = 0;
-			lvl++;
-		}
-	}
 }
 
 
 
 int main (int argc, char* argv[]) {
 	int startvtx;
-	int i, j, v, reached;
+	int i, v, reached;
 //	if (argc == 2) {
 //		startvtx = atoi (argv[1]);
 //	} else {
@@ -142,28 +106,9 @@ int main (int argc, char* argv[]) {
 	printf("Num of Edges: %d\n", ne);
 	printf("Num of Vertex: %d\n", nv);
 
-
-	//Print the Info of eacg vertex//
-	/*for(i = 0; i < nv; i++){
-		printf("Vertex[%d]: ", i);
-		j = 1;
-		while(j<=vector_pos[i]){
-			printf("%d ", vtx[i][j]);
-			j++;
-		}
-		printf("\nNum of link: %d\n", vector_pos[i]);
-	}*/
-
-
-
 	clock_gettime(CLOCK_REALTIME, &start_time); //stdio scanf ended, timer starts  //Don't remove it
 
-	bfs();
-
-		//Print the level of each vertex//
-//	for(i = 0; i <= 100; i++)
-//		printf("The level of Vertex[%d]: %d\n", i, level[i]);
-
+	//bfs();
 
 	clock_gettime(CLOCK_REALTIME, &end_time);  //graph construction and bfs completed timer ends  //Don't remove it
 
@@ -185,7 +130,7 @@ int main (int argc, char* argv[]) {
 				end_time.tv_sec - start_time.tv_sec - 1,
 				end_time.tv_nsec - start_time.tv_nsec + 1000*1000*1000);
 	}
-	sig_check(nv);
+	//sig_check(nv);
 
 	return 0;
 }
@@ -193,21 +138,25 @@ int main (int argc, char* argv[]) {
 
 int* push_back(int *array, int* data, int* pos, int* size)
 {
+	int* new_array;
 	if((*size) == 0){
 		array = (int*)malloc(2*sizeof(int));
-		array[1] = (*data);
+		array[0] = (*data);
 		(*pos) = 1;
 		(*size) = 2;
 	}
 	else if((*pos)+1 <= (*size)){
-		array[(*pos)+1] = (*data);
+		array[(*pos)+1] = *data;
 		(*pos)++;
 	}
 	else if((*pos)+1 > (*size)){
-		array = (int*)realloc(array, 2*(*size)*sizeof(int));
-		array[(*pos)+1] = (*data);
+		new_array = (int*)malloc(2*(*size));
+		memcpy(new_array, array, (*pos));
+		free(array); 
+		new_array[(*pos)+1] = (*data);
 		(*size) = (*size)*2;
 		(*pos)++;
+		return new_array;
 	}
 	return array;
 }
