@@ -200,6 +200,9 @@ int main (int argc, char* argv[]) {
   free(head);
 
   bfs (startvtx, G, &level, &nlevels, &levelsize, &parent);
+
+	for(i = 0; i <= 100; i++)
+		printf("The level of Vertex[%d]: %d\n", i, level[i]);
   /* You can modify the function above */
 
   clock_gettime(CLOCK_REALTIME, &end_time);  //graph construction and bfs completed timer ends  //Don't remove it

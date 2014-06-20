@@ -9,38 +9,25 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include <vector>
-#include <queue>
-#include <pthread.h>
-#include <fstream>
-#include <iostream>
-
 #define VISITED 1
 #define UNVISITED 0
 #define VTXNUM 60000000
-#define THREADNUM 8
+#define EDGENUM 90000000
 
-using namespace std;
-
+int* push_back(int*, int*, int*, int*);
 
 /* global state */
 struct timespec  start_time;                                 
 struct timespec  end_time;  
 
-struct pthArg_t{
-	int threadID, vtxIdx;
-};
 
-pair<int, vector<int> > vtx[VTXNUM+1];
-queue<int> q;
-
-pthread_mutex_t q_lock;
-
+int VISIT_CHECK[VTXNUM+1];
+int* vtx[VTXNUM+1];
+int vector_pos[VTXNUM+1];
+int vector_size[VTXNUM+1];
 int level[VTXNUM+1];
+int queue[EDGENUM+1];
 int nv, ne = 0;
-
-int lvl = 1, qTopIndex;
-int tmp_samelvl = 0;
 
 unsigned int seed = 0x12345678;
 unsigned int myrand(unsigned int *seed, unsigned int input) {  
@@ -72,93 +59,29 @@ void sig_check(int nv) {
 
 void read_edge_list () {
 	int max_edges = 100000000;
-	int nedges, nr, t, h;
-
+	int nedges, nr, t, h, max;
 	nedges = 0;
 	nr = scanf("%i %i",&h,&t);
-	nv = max(t, h);
+	if(t > h)	nv = t;
+	else	nv = h;
 	while (nr == 2) {
 		if (nedges >= max_edges) {
 			printf("Limit of %d edges exceeded.\n",max_edges);
 			exit(1);
 		}
-		vtx[h].first = UNVISITED;
-		vtx[t].first = UNVISITED;
+		vtx[h] = push_back(vtx[h], &t, &vector_pos[h], &vector_size[h]);
 		level[h] = -1;
 		level[t] = -1;
-		vtx[h].second.push_back(t);
 		ne++;
-		nv = max(nv, max(t, h));
+		if(t > h)	max = t;
+		else	max = h;
+		if(max > nv)	nv = max;
 		nr = scanf("%i %i",&h,&t);
-	}
-}
-
-void* discover(void* arg)
-{
-	int id = (int) arg;
-	int vtxAdjNum = vtx[qTopIndex].second.size();
-	int i, range, begin, end, nowVtxIdx;
-
-	range = vtxAdjNum / THREADNUM;
-
-	begin =	id * range; 
-	if(id == THREADNUM - 1)
-		end = vtxAdjNum;
-	else
-		end = ((id+1) * range);
-	
-	for(i=begin; i<end; i++){
-		nowVtxIdx = vtx[qTopIndex].second[i];
-		if(vtx[nowVtxIdx].first == UNVISITED){
-			vtx[nowVtxIdx].first = VISITED;
-			level[nowVtxIdx] = lvl;
-
-			pthread_mutex_lock(&q_lock);
-
-			q.push(nowVtxIdx);
-			tmp_samelvl++;
-
-			pthread_mutex_unlock(&q_lock);
-		}
 	}
 }
 
 void bfs()
 {
-	int samelvl;
-	int i;
-	pthread_t *threads;
-
-	threads = (pthread_t *) malloc (THREADNUM * sizeof(pthread_t));
-	pthread_mutex_init(&q_lock, NULL);
-
-	level[0] = -1;
-	level[1] = 0;
-	for(i = 0; i < vtx[1].second.size(); i++){
-		q.push(vtx[1].second[i]);
-		vtx[vtx[1].second[i]].first = VISITED;
-		level[vtx[1].second[i]] = lvl;
-	}
-	lvl++;
-	samelvl = vtx[1].second.size();
-	while(q.size()!=0){
-		qTopIndex = q.front();
-		for(i=0; i < THREADNUM; i++){
-			pthread_create(&threads[i], NULL, discover, (void*) i);
-		}
-
-		for(i=0; i < THREADNUM; i++){
-			pthread_join(threads[i], NULL);
-		}
-
-		q.pop();
-		samelvl--;
-		if(samelvl == 0){
-			samelvl = tmp_samelvl;
-			tmp_samelvl = 0;
-			lvl++;
-		}
-	}
 }
 
 
@@ -166,14 +89,18 @@ void bfs()
 int main (int argc, char* argv[]) {
 	int startvtx;
 	int i, v, reached;
-	if (argc == 2) {
-		startvtx = atoi (argv[1]);
-	} else {
-		printf("usage:   bfstest <startvtx> < <edgelistfile>\n");
-		printf("example: cat sample.txt | ./bfstest 1\n");
-		exit(1);
+//	if (argc == 2) {
+//		startvtx = atoi (argv[1]);
+//	} else {
+//		printf("usage:   bfstest <startvtx> < <edgelistfile>\n");
+//		printf("example: cat sample.txt | ./bfstest 1\n");
+//		exit(1);
+//	}
+	startvtx = 1;
+	for(i = 0; i < VTXNUM + 1; i++){
+		vector_pos[i] = 0;
+		vector_size[i] = 0;
 	}
-
 	read_edge_list();
 	nv++;
 	printf("Num of Edges: %d\n", ne);
@@ -181,7 +108,7 @@ int main (int argc, char* argv[]) {
 
 	clock_gettime(CLOCK_REALTIME, &start_time); //stdio scanf ended, timer starts  //Don't remove it
 
-	bfs();
+	//bfs();
 
 	clock_gettime(CLOCK_REALTIME, &end_time);  //graph construction and bfs completed timer ends  //Don't remove it
 
@@ -203,7 +130,33 @@ int main (int argc, char* argv[]) {
 				end_time.tv_sec - start_time.tv_sec - 1,
 				end_time.tv_nsec - start_time.tv_nsec + 1000*1000*1000);
 	}
-	sig_check(nv);
+	//sig_check(nv);
 
 	return 0;
+}
+
+
+int* push_back(int *array, int* data, int* pos, int* size)
+{
+	int* new_array;
+	if((*size) == 0){
+		array = (int*)malloc(2*sizeof(int));
+		array[0] = (*data);
+		(*pos) = 1;
+		(*size) = 2;
+	}
+	else if((*pos)+1 <= (*size)){
+		array[(*pos)+1] = *data;
+		(*pos)++;
+	}
+	else if((*pos)+1 > (*size)){
+		new_array = (int*)malloc(2*(*size));
+		memcpy(new_array, array, (*pos));
+		free(array); 
+		new_array[(*pos)+1] = (*data);
+		(*size) = (*size)*2;
+		(*pos)++;
+		return new_array;
+	}
+	return array;
 }
