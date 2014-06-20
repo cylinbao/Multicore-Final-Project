@@ -1,0 +1,2 @@
+./needle 8192 10
+cmp result.txt GoldenData_8192_10
